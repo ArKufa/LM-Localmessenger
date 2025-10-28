@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LM-Local Messenger</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            color: #4CAF50;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .channels h2, .online-users h2 {
+            margin-bottom: 15px;
+            color: #4CAF50;
+            font-size: 1.2rem;
+        }
+
+        .channel-list, .user-list {
+            list-style: none;
+        }
+
+        .channel-item, .user-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .channel-item:hover, .user-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .channel-item.active {
+            background-color: rgba(76, 175, 80, 0.3);
+            border-left: 3px solid #4CAF50;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #2196F3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-header h2 {
+            font-size: 1.3rem;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .message.own {
+            align-self: flex-end;
+            background-color: rgba(76, 175, 80, 0.3);
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.other {
+            align-self: flex-start;
+            background-color: rgba(33, 150, 243, 0.3);
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .message-sender {
+            font-weight: bold;
+        }
+
+        .message-content {
+            line-height: 1.4;
+        }
+
+        .input-area {
+            padding: 15px 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .message-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .send-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 20px;
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .send-button:hover {
+            background-color: #45a049;
+        }
+
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .login-form {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-form h2 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-button:hover {
+            background-color: #45a049;
+        }
+
+        .error-message {
+            color: #f44336;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            margin-right: 5px;
+        }
+
+        .status-online {
+            background-color: #4CAF50;
+        }
+
+        .status-offline {
+            background-color: #f44336;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Экран входа -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-form">
+            <div class="logo">
+                <span class="logo-icon">💬</span>
+                <h1>LM-Local Messenger</h1>
+            </div>
+            <h2>Вход в систему</h2>
+            <div class="form-group">
+                <label for="username">Имя пользователя</label>
+                <input type="text" id="username" placeholder="Введите ваше имя">
+            </div>
+            <div class="form-group">
+                <label for="character">Имя персонажа</label>
+                <input type="text" id="character" placeholder="Введите имя персонажа">
+            </div>
+            <button id="loginButton" class="login-button">Войти в чат</button>
+            <div id="loginError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Основной интерфейс мессенджера -->
+    <div id="app" style="display: none;">
+        <div class="header">
+            <div class="logo">
+                <span class="logo-icon">💬</span>
+                <h1>LM-Local Messenger</h1>
+            </div>
+            <div class="user-info">
+                <span id="currentUser">Пользователь</span>
+                <div class="avatar" id="userAvatar">U</div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="sidebar">
+                <div class="channels">
+                    <h2>Каналы</h2>
+                    <ul class="channel-list" id="channelList">
+                        <li class="channel-item active" data-channel="general">Общий чат</li>
+                        <li class="channel-item" data-channel="ooc">OOC (Out of Character)</li>
+                        <li class="channel-item" data-channel="faction">Фракции</li>
+                        <li class="channel-item" data-channel="trade">Торговля</li>
+                        <li class="channel-item" data-channel="events">События</li>
+                    </ul>
+                </div>
+
+                <div class="online-users">
+                    <h2>Онлайн (<span id="onlineCount">0</span>)</h2>
+                    <ul class="user-list" id="userList">
+                        <!-- Список пользователей будет заполнен динамически -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main">
+                <div class="chat-header">
+                    <h2 id="currentChannel">Общий чат</h2>
+                </div>
+
+                <div class="messages" id="messagesContainer">
+                    <!-- Сообщения будут добавляться динамически -->
+                    <div class="message other">
+                        <div class="message-header">
+                            <span class="message-sender">Система</span>
+                            <span class="message-time">Только что</span>
+                        </div>
+                        <div class="message-content">
+                            Добро пожаловать в LM-Local Messenger! Вы подключились к общему чату.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Введите сообщение...">
+                    <button class="send-button" id="sendButton">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация Supabase
+        const SUPABASE_URL = 'https://your-project.supabase.co'; // Замените на ваш URL
+        const SUPABASE_ANON_KEY = 'your-anon-key'; // Замените на ваш ключ
+
+        // Инициализация Supabase клиента
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Состояние приложения
+        let currentUser = null;
+        let currentChannel = 'general';
+        let onlineUsers = [];
+
+        // Элементы DOM
+        const loginScreen = document.getElementById('loginScreen');
+        const app = document.getElementById('app');
+        const loginButton = document.getElementById('loginButton');
+        const loginError = document.getElementById('loginError');
+        const usernameInput = document.getElementById('username');
+        const characterInput = document.getElementById('character');
+        const currentUserElement = document.getElementById('currentUser');
+        const userAvatar = document.getElementById('userAvatar');
+        const channelList = document.getElementById('channelList');
+        const currentChannelElement = document.getElementById('currentChannel');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const userList = document.getElementById('userList');
+        const onlineCount = document.getElementById('onlineCount');
+
+        // Функция входа в систему
+        loginButton.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            const character = characterInput.value.trim();
+
+            if (!username || !character) {
+                loginError.textContent = 'Пожалуйста, заполните все поля';
+                return;
+            }
+
+            // Сохраняем информацию о пользователе
+            currentUser = {
+                username,
+                character,
+                avatar: username.charAt(0).toUpperCase(),
+                lastSeen: new Date()
+            };
+
+            // Обновляем интерфейс
+            currentUserElement.textContent = `${character} (${username})`;
+            userAvatar.textContent = currentUser.avatar;
+
+            // Переключаем экраны
+            loginScreen.style.display = 'none';
+            app.style.display = 'block';
+
+            // Подключаемся к каналу
+            await joinChannel(currentChannel);
+            
+            // Добавляем пользователя в список онлайн
+            await addUserToOnlineList();
+            
+            // Загружаем историю сообщений
+            await loadMessages();
+            
+            // Настраиваем подписку на новые сообщения
+            setupMessagesSubscription();
+            
+            // Настраиваем подписку на онлайн пользователей
+            setupOnlineUsersSubscription();
+        });
+
+        // Функция добавления пользователя в список онлайн
+        async function addUserToOnlineList() {
+            const { error } = await supabase
+                .from('online_users')
+                .upsert({
+                    username: currentUser.username,
+                    character: currentUser.character,
+                    avatar: currentUser.avatar,
+                    last_seen: new Date()
+                });
+
+            if (error) {
+                console.error('Ошибка добавления пользователя:', error);
+            }
+        }
+
+        // Функция смены канала
+        channelList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('channel-item')) {
+                // Убираем активный класс у всех каналов
+                document.querySelectorAll('.channel-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Добавляем активный класс выбранному каналу
+                e.target.classList.add('active');
+                
+                // Меняем канал
+                const newChannel = e.target.dataset.channel;
+                switchChannel(newChannel);
+            }
+        });
+
+        // Функция переключения канала
+        async function switchChannel(channel) {
+            currentChannel = channel;
+            currentChannelElement.textContent = getChannelName(channel);
+            
+            // Очищаем сообщения
+            messagesContainer.innerHTML = '';
+            
+            // Загружаем сообщения для нового канала
+            await loadMessages();
+        }
+
+        // Функция получения имени канала
+        function getChannelName(channel) {
+            const channelNames = {
+                'general': 'Общий чат',
+                'ooc': 'OOC (Out of Character)',
+                'faction': 'Фракции',
+                'trade': 'Торговля',
+                'events': 'События'
+            };
+            
+            return channelNames[channel] || channel;
+        }
+
+        // Функция загрузки сообщений
+        async function loadMessages() {
+            const { data: messages, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('channel', currentChannel)
+                .order('created_at', { ascending: true })
+                .limit(50);
+
+            if (error) {
+                console.error('Ошибка загрузки сообщений:', error);
+                return;
+            }
+
+            // Очищаем контейнер сообщений
+            messagesContainer.innerHTML = '';
+
+            // Добавляем сообщения в интерфейс
+            messages.forEach(message => {
+                addMessageToUI(message);
+            });
+
+            // Прокручиваем вниз
+            scrollToBottom();
+        }
+
+        // Функция добавления сообщения в UI
+        function addMessageToUI(message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            
+            // Определяем, наше ли это сообщение
+            if (message.sender === currentUser.username) {
+                messageElement.classList.add('own');
+            } else {
+                messageElement.classList.add('other');
+            }
+            
+            const messageTime = new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageElement.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${message.character}</span>
+                    <span class="message-time">${messageTime}</span>
+                </div>
+                <div class="message-content">${message.content}</div>
+            `;
+            
+            messagesContainer.appendChild(messageElement);
+        }
+
+        // Функция отправки сообщения
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const content = messageInput.value.trim();
+            
+            if (!content) return;
+            
+            // Создаем сообщение
+            const message = {
+                sender: currentUser.username,
+                character: currentUser.character,
+                content: content,
+                channel: currentChannel,
+                created_at: new Date()
+            };
+            
+            // Сохраняем сообщение в базе данных
+            const { error } = await supabase
+                .from('messages')
+                .insert([message]);
+            
+            if (error) {
+                console.error('Ошибка отправки сообщения:', error);
+                return;
+            }
+            
+            // Очищаем поле ввода
+            messageInput.value = '';
+        }
+
+        // Функция настройки подписки на новые сообщения
+        function setupMessagesSubscription() {
+            supabase
+                .channel('messages')
+                .on('postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 'messages',
+                        filter: `channel=eq.${currentChannel}`
+                    }, 
+                    (payload) => {
+                        // Добавляем новое сообщение в UI
+                        addMessageToUI(payload.new);
+                        scrollToBottom();
+                    }
+                )
+                .subscribe();
+        }
+
+        // Функция настройки подписки на онлайн пользователей
+        function setupOnlineUsersSubscription() {
+            // Загружаем текущих онлайн пользователей
+            loadOnlineUsers();
+            
+            // Подписываемся на изменения
+            supabase
+                .channel('online_users')
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'online_users'
+                    }, 
+                    (payload) => {
+                        // Обновляем список онлайн пользователей
+                        loadOnlineUsers();
+                    }
+                )
+                .subscribe();
+        }
+
+        // Функция загрузки онлайн пользователей
+        async function loadOnlineUsers() {
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+            
+            const { data: users, error } = await supabase
+                .from('online_users')
+                .select('*')
+                .gt('last_seen', fiveMinutesAgo);
+            
+            if (error) {
+                console.error('Ошибка загрузки онлайн пользователей:', error);
+                return;
+            }
+            
+            // Обновляем список пользователей
+            onlineUsers = users;
+            onlineCount.textContent = users.length;
+            
+            // Обновляем UI
+            updateOnlineUsersUI();
+        }
+
+        // Функция обновления UI списка онлайн пользователей
+        function updateOnlineUsersUI() {
+            userList.innerHTML = '';
+            
+            onlineUsers.forEach(user => {
+                const userElement = document.createElement('li');
+                userElement.classList.add('user-item');
+                
+                userElement.innerHTML = `
+                    <div class="user-avatar">${user.avatar}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user.character}</div>
+                        <div class="user-username">${user.username}</div>
+                    </div>
+                `;
+                
+                userList.appendChild(userElement);
+            });
+        }
+
+        // Функция прокрутки вниз
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Функция обновления времени последней активности
+        async function updateLastSeen() {
+            if (!currentUser) return;
+            
+            await supabase
+                .from('online_users')
+                .upsert({
+                    username: currentUser.username,
+                    character: currentUser.character,
+                    avatar: currentUser.avatar,
+                    last_seen: new Date()
+                });
+        }
+
+        // Обновляем статус онлайн каждую минуту
+        setInterval(updateLastSeen, 60000);
+
+        // При загрузке страницы пытаемся восстановить сессию
+        window.addEventListener('load', () => {
+            const savedUser = localStorage.getItem('lm_currentUser');
+            
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                currentUserElement.textContent = `${currentUser.character} (${currentUser.username})`;
+                userAvatar.textContent = currentUser.avatar;
+                
+                loginScreen.style.display = 'none';
+                app.style.display = 'block';
+                
+                joinChannel(currentChannel);
+                addUserToOnlineList();
+                loadMessages();
+                setupMessagesSubscription();
+                setupOnlineUsersSubscription();
+            }
+        });
+
+        // Сохраняем пользователя в localStorage при входе
+        loginButton.addEventListener('click', () => {
+            if (currentUser) {
+                localStorage.setItem('lm_currentUser', JSON.stringify(currentUser));
+            }
+        });
+
+        // Функция присоединения к каналу
+        async function joinChannel(channel) {
+            // В реальном приложении здесь может быть логика присоединения к комнате
+            console.log(`Присоединились к каналу: ${channel}`);
+        }
+    </script>
+</body>
+</html>
