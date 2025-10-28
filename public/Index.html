@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LM-Local Messenger</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
             margin: 0;
@@ -165,6 +165,13 @@
             border-bottom-left-radius: 2px;
         }
 
+        .message.bot {
+            align-self: center;
+            background-color: rgba(255, 193, 7, 0.3);
+            max-width: 90%;
+            text-align: center;
+        }
+
         .message-header {
             display: flex;
             justify-content: space-between;
@@ -283,19 +290,11 @@
         }
 
         .status-indicator {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background-color: #4CAF50;
-            margin-right: 5px;
-        }
-
-        .status-online {
-            background-color: #4CAF50;
-        }
-
-        .status-offline {
-            background-color: #f44336;
+            margin-right: 8px;
         }
 
         @media (max-width: 768px) {
@@ -350,10 +349,9 @@
                     <h2>Каналы</h2>
                     <ul class="channel-list" id="channelList">
                         <li class="channel-item active" data-channel="general">Общий чат</li>
-                        <li class="channel-item" data-channel="ooc">OOC (Out of Character)</li>
+                        <li class="channel-item" data-channel="ooc">OOC чат</li>
                         <li class="channel-item" data-channel="faction">Фракции</li>
                         <li class="channel-item" data-channel="trade">Торговля</li>
-                        <li class="channel-item" data-channel="events">События</li>
                     </ul>
                 </div>
 
@@ -372,15 +370,6 @@
 
                 <div class="messages" id="messagesContainer">
                     <!-- Сообщения будут добавляться динамически -->
-                    <div class="message other">
-                        <div class="message-header">
-                            <span class="message-sender">Система</span>
-                            <span class="message-time">Только что</span>
-                        </div>
-                        <div class="message-content">
-                            Добро пожаловать в LM-Local Messenger! Вы подключились к общему чату.
-                        </div>
-                    </div>
                 </div>
 
                 <div class="input-area">
@@ -392,12 +381,8 @@
     </div>
 
     <script>
-        // Конфигурация Supabase
-        const SUPABASE_URL = 'https://your-project.supabase.co'; // Замените на ваш URL
-        const SUPABASE_ANON_KEY = 'your-anon-key'; // Замените на ваш ключ
-
-        // Инициализация Supabase клиента
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Подключение к WebSocket серверу
+        const socket = io();
 
         // Состояние приложения
         let currentUser = null;
@@ -422,7 +407,7 @@
         const onlineCount = document.getElementById('onlineCount');
 
         // Функция входа в систему
-        loginButton.addEventListener('click', async () => {
+        loginButton.addEventListener('click', () => {
             const username = usernameInput.value.trim();
             const character = characterInput.value.trim();
 
@@ -435,8 +420,7 @@
             currentUser = {
                 username,
                 character,
-                avatar: username.charAt(0).toUpperCase(),
-                lastSeen: new Date()
+                avatar: username.charAt(0).toUpperCase()
             };
 
             // Обновляем интерфейс
@@ -447,39 +431,59 @@
             loginScreen.style.display = 'none';
             app.style.display = 'block';
 
-            // Подключаемся к каналу
-            await joinChannel(currentChannel);
-            
-            // Добавляем пользователя в список онлайн
-            await addUserToOnlineList();
+            // Подключаемся к серверу через WebSocket
+            socket.emit('user_join', currentUser);
             
             // Загружаем историю сообщений
-            await loadMessages();
-            
-            // Настраиваем подписку на новые сообщения
-            setupMessagesSubscription();
-            
-            // Настраиваем подписку на онлайн пользователей
-            setupOnlineUsersSubscription();
+            loadMessages();
         });
 
-        // Функция добавления пользователя в список онлайн
-        async function addUserToOnlineList() {
-            const { error } = await supabase
-                .from('online_users')
-                .upsert({
-                    username: currentUser.username,
-                    character: currentUser.character,
-                    avatar: currentUser.avatar,
-                    last_seen: new Date()
-                });
+        // Обработка новых сообщений от сервера
+        socket.on('new_message', (message) => {
+            addMessageToUI(message);
+            scrollToBottom();
+        });
 
-            if (error) {
-                console.error('Ошибка добавления пользователя:', error);
+        // Обновление списка онлайн пользователей
+        socket.on('online_users_update', (users) => {
+            onlineUsers = users;
+            updateOnlineUsersUI();
+        });
+
+        // Пользователь присоединился
+        socket.on('user_joined', (user) => {
+            addSystemMessage(`${user.character} присоединился к чату`);
+        });
+
+        // Пользователь вышел
+        socket.on('user_left', (user) => {
+            addSystemMessage(`${user.character} покинул чат`);
+        });
+
+        // Обработка отправки сообщений
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
+        });
+
+        function sendMessage() {
+            const content = messageInput.value.trim();
+            
+            if (!content) return;
+            
+            // Отправляем сообщение через WebSocket
+            socket.emit('send_message', {
+                content: content,
+                channel: currentChannel
+            });
+            
+            // Очищаем поле ввода
+            messageInput.value = '';
         }
 
-        // Функция смены канала
+        // Смена канала
         channelList.addEventListener('click', (e) => {
             if (e.target.classList.contains('channel-item')) {
                 // Убираем активный класс у всех каналов
@@ -512,10 +516,9 @@
         function getChannelName(channel) {
             const channelNames = {
                 'general': 'Общий чат',
-                'ooc': 'OOC (Out of Character)',
+                'ooc': 'OOC чат',
                 'faction': 'Фракции',
-                'trade': 'Торговля',
-                'events': 'События'
+                'trade': 'Торговля'
             };
             
             return channelNames[channel] || channel;
@@ -523,28 +526,23 @@
 
         // Функция загрузки сообщений
         async function loadMessages() {
-            const { data: messages, error } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('channel', currentChannel)
-                .order('created_at', { ascending: true })
-                .limit(50);
+            try {
+                const response = await fetch(`/api/messages/${currentChannel}`);
+                const messages = await response.json();
+                
+                // Очищаем контейнер сообщений
+                messagesContainer.innerHTML = '';
 
-            if (error) {
+                // Добавляем сообщения в интерфейс
+                messages.forEach(message => {
+                    addMessageToUI(message);
+                });
+
+                // Прокручиваем вниз
+                scrollToBottom();
+            } catch (error) {
                 console.error('Ошибка загрузки сообщений:', error);
-                return;
             }
-
-            // Очищаем контейнер сообщений
-            messagesContainer.innerHTML = '';
-
-            // Добавляем сообщения в интерфейс
-            messages.forEach(message => {
-                addMessageToUI(message);
-            });
-
-            // Прокручиваем вниз
-            scrollToBottom();
         }
 
         // Функция добавления сообщения в UI
@@ -552,14 +550,18 @@
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
             
-            // Определяем, наше ли это сообщение
-            if (message.sender === currentUser.username) {
+            if (message.is_bot) {
+                messageElement.classList.add('bot');
+            } else if (message.sender === currentUser?.username) {
                 messageElement.classList.add('own');
             } else {
                 messageElement.classList.add('other');
             }
             
-            const messageTime = new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const messageTime = new Date(message.created_at).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
             
             messageElement.innerHTML = `
                 <div class="message-header">
@@ -572,115 +574,28 @@
             messagesContainer.appendChild(messageElement);
         }
 
-        // Функция отправки сообщения
-        sendButton.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        async function sendMessage() {
-            const content = messageInput.value.trim();
-            
-            if (!content) return;
-            
-            // Создаем сообщение
-            const message = {
-                sender: currentUser.username,
-                character: currentUser.character,
-                content: content,
-                channel: currentChannel,
-                created_at: new Date()
-            };
-            
-            // Сохраняем сообщение в базе данных
-            const { error } = await supabase
-                .from('messages')
-                .insert([message]);
-            
-            if (error) {
-                console.error('Ошибка отправки сообщения:', error);
-                return;
-            }
-            
-            // Очищаем поле ввода
-            messageInput.value = '';
-        }
-
-        // Функция настройки подписки на новые сообщения
-        function setupMessagesSubscription() {
-            supabase
-                .channel('messages')
-                .on('postgres_changes', 
-                    { 
-                        event: 'INSERT', 
-                        schema: 'public', 
-                        table: 'messages',
-                        filter: `channel=eq.${currentChannel}`
-                    }, 
-                    (payload) => {
-                        // Добавляем новое сообщение в UI
-                        addMessageToUI(payload.new);
-                        scrollToBottom();
-                    }
-                )
-                .subscribe();
-        }
-
-        // Функция настройки подписки на онлайн пользователей
-        function setupOnlineUsersSubscription() {
-            // Загружаем текущих онлайн пользователей
-            loadOnlineUsers();
-            
-            // Подписываемся на изменения
-            supabase
-                .channel('online_users')
-                .on('postgres_changes', 
-                    { 
-                        event: '*', 
-                        schema: 'public', 
-                        table: 'online_users'
-                    }, 
-                    (payload) => {
-                        // Обновляем список онлайн пользователей
-                        loadOnlineUsers();
-                    }
-                )
-                .subscribe();
-        }
-
-        // Функция загрузки онлайн пользователей
-        async function loadOnlineUsers() {
-            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-            
-            const { data: users, error } = await supabase
-                .from('online_users')
-                .select('*')
-                .gt('last_seen', fiveMinutesAgo);
-            
-            if (error) {
-                console.error('Ошибка загрузки онлайн пользователей:', error);
-                return;
-            }
-            
-            // Обновляем список пользователей
-            onlineUsers = users;
-            onlineCount.textContent = users.length;
-            
-            // Обновляем UI
-            updateOnlineUsersUI();
+        // Функция добавления системного сообщения
+        function addSystemMessage(content) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'bot');
+            messageElement.innerHTML = `
+                <div class="message-content">${content}</div>
+            `;
+            messagesContainer.appendChild(messageElement);
+            scrollToBottom();
         }
 
         // Функция обновления UI списка онлайн пользователей
         function updateOnlineUsersUI() {
             userList.innerHTML = '';
+            onlineCount.textContent = onlineUsers.length;
             
             onlineUsers.forEach(user => {
                 const userElement = document.createElement('li');
                 userElement.classList.add('user-item');
                 
                 userElement.innerHTML = `
+                    <div class="status-indicator"></div>
                     <div class="user-avatar">${user.avatar}</div>
                     <div class="user-info">
                         <div class="user-name">${user.character}</div>
@@ -697,55 +612,15 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Функция обновления времени последней активности
-        async function updateLastSeen() {
-            if (!currentUser) return;
-            
-            await supabase
-                .from('online_users')
-                .upsert({
-                    username: currentUser.username,
-                    character: currentUser.character,
-                    avatar: currentUser.avatar,
-                    last_seen: new Date()
+        // Загрузка онлайн пользователей при подключении
+        socket.on('connect', () => {
+            fetch('/api/online-users')
+                .then(response => response.json())
+                .then(users => {
+                    onlineUsers = users;
+                    updateOnlineUsersUI();
                 });
-        }
-
-        // Обновляем статус онлайн каждую минуту
-        setInterval(updateLastSeen, 60000);
-
-        // При загрузке страницы пытаемся восстановить сессию
-        window.addEventListener('load', () => {
-            const savedUser = localStorage.getItem('lm_currentUser');
-            
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                currentUserElement.textContent = `${currentUser.character} (${currentUser.username})`;
-                userAvatar.textContent = currentUser.avatar;
-                
-                loginScreen.style.display = 'none';
-                app.style.display = 'block';
-                
-                joinChannel(currentChannel);
-                addUserToOnlineList();
-                loadMessages();
-                setupMessagesSubscription();
-                setupOnlineUsersSubscription();
-            }
         });
-
-        // Сохраняем пользователя в localStorage при входе
-        loginButton.addEventListener('click', () => {
-            if (currentUser) {
-                localStorage.setItem('lm_currentUser', JSON.stringify(currentUser));
-            }
-        });
-
-        // Функция присоединения к каналу
-        async function joinChannel(channel) {
-            // В реальном приложении здесь может быть логика присоединения к комнате
-            console.log(`Присоединились к каналу: ${channel}`);
-        }
     </script>
 </body>
 </html>
