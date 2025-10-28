@@ -1,7 +1,7 @@
 {
   "name": "lm-military-messenger",
   "version": "1.0.0",
-  "description": "Military-style Messenger with Discord OAuth",
+  "description": "Military-style Messenger with Supabase",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,8 +12,7 @@
     "socket.io": "^4.7.2",
     "cors": "^2.8.5",
     "axios": "^1.5.0",
-    "sqlite3": "^5.1.6",
-    "dotenv": "^16.3.1"
+    "@supabase/supabase-js": "^2.38.0"
   },
   "engines": {
     "node": ">=18.0.0"
