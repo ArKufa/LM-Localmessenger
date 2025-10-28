@@ -3,7 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +17,7 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 // Supabase клиент
 const supabase = createClient(
@@ -41,18 +42,21 @@ const systemBots = {
     character: 'Мастер Игры',
     avatar: '🎮',
     description: 'Гейммастер сервера'
-  },
-  'event_bot': {
-    name: 'Event Bot',
-    character: 'Организатор Событий',
-    avatar: '🎉',
-    description: 'Бот мероприятий и событий'
   }
 };
 
 // API Routes
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'LM-Local Messenger Server is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'LM-Local Messenger Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Главная страница
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Получение истории сообщений
@@ -92,8 +96,7 @@ io.on('connection', (socket) => {
       username: userData.username,
       character: userData.character,
       avatar: userData.avatar || userData.username.charAt(0).toUpperCase(),
-      joinedAt: new Date(),
-      lastSeen: new Date()
+      joinedAt: new Date()
     };
 
     // Сохраняем пользователя
@@ -116,7 +119,7 @@ io.on('connection', (socket) => {
       sender: 'system',
       character: systemBots.rp_helper.character,
       avatar: systemBots.rp_helper.avatar,
-      content: `Добро пожаловать в чат, ${user.character}! Не забудьте ознакомиться с правилами RP.`,
+      content: `Добро пожаловать в чат, ${user.character}! Используйте /help для списка команд.`,
       channel: 'general',
       created_at: new Date(),
       is_bot: true
@@ -138,7 +141,7 @@ io.on('connection', (socket) => {
         character: user.character,
         avatar: user.avatar,
         content: messageData.content,
-        channel: messageData.channel,
+        channel: messageData.channel || 'general',
         created_at: new Date()
       };
 
@@ -151,7 +154,7 @@ io.on('connection', (socket) => {
 
       if (error) throw error;
 
-      // Отправляем сообщение всем в канале
+      // Отправляем сообщение всем
       io.emit('new_message', savedMessage);
 
       // Обработка команд для ботов
@@ -162,57 +165,6 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Ошибка отправки сообщения:', error);
       socket.emit('message_error', { error: 'Не удалось отправить сообщение' });
-    }
-  });
-
-  // Приватные сообщения
-  socket.on('private_message', async (data) => {
-    try {
-      const fromUser = activeUsers.get(socket.id);
-      const toSocketId = userSockets.get(data.toUser);
-
-      if (toSocketId && fromUser) {
-        const privateMessage = {
-          id: Date.now(),
-          from: fromUser.username,
-          from_character: fromUser.character,
-          to: data.toUser,
-          content: data.content,
-          created_at: new Date(),
-          is_private: true
-        };
-
-        // Сохраняем приватное сообщение
-        const { error } = await supabase
-          .from('private_messages')
-          .insert([privateMessage]);
-
-        if (error) throw error;
-
-        // Отправляем получателю
-        io.to(toSocketId).emit('private_message_received', privateMessage);
-        
-        // Отправляем отправителю подтверждение
-        socket.emit('private_message_sent', privateMessage);
-      }
-    } catch (error) {
-      console.error('Ошибка отправки приватного сообщения:', error);
-    }
-  });
-
-  // Смена канала
-  socket.on('switch_channel', (data) => {
-    const user = activeUsers.get(socket.id);
-    if (user) {
-      socket.join(data.channel);
-      socket.emit('channel_switched', data.channel);
-      
-      // Уведомляем о смене канала
-      socket.to(data.channel).emit('user_channel_activity', {
-        user: user.character,
-        channel: data.channel,
-        action: 'joined'
-      });
     }
   });
 
@@ -238,11 +190,6 @@ io.on('connection', (socket) => {
       console.log(`Пользователь ${user.character} покинул чат`);
     }
   });
-
-  // Пинг для поддержания соединения
-  socket.on('ping', () => {
-    socket.emit('pong');
-  });
 });
 
 // Обработка команд ботов
@@ -253,11 +200,11 @@ function handleBotCommand(command, user, socket) {
   switch (cmd.toLowerCase()) {
     case 'help':
       response.content = `
-Доступные команды:
+📋 Доступные команды:
 /help - Показать это сообщение
 /rules - Правила RP сервера
 /roll [число] - Бросок кубика (по умолчанию 100)
-/me [действие] - Описание действия от лица персонажа
+/me [действие] - Описание действия
 /time - Текущее игровое время
 /weather - Текущая погода
       `;
@@ -297,9 +244,9 @@ function handleBotCommand(command, user, socket) {
       break;
 
     case 'weather':
-      const weathers = ['Солнечно', 'Дождливо', 'Туманно', 'Пасмурно', 'Ветрено'];
+      const weathers = ['Солнечно', 'Дождливо', 'Туманно', 'Пасмурно'];
       const randomWeather = weathers[Math.floor(Math.random() * weathers.length)];
-      response.content = `🌤️ Погода на сервере: ${randomWeather}`;
+      response.content = `🌤️ Погода: ${randomWeather}`;
       response.bot = 'game_master';
       break;
 
@@ -345,5 +292,4 @@ async function updateUserOnlineStatus(user, isOnline) {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 LM-Local Messenger Server запущен на порту ${PORT}`);
-  console.log(`📡 WebSocket сервер готов к подключениям`);
 });
