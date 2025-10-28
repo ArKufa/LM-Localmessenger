@@ -317,7 +317,7 @@
             font-size: 12px;
         }
 
-        /* Экран авторизации */
+        /* Экран входа */
         .login-container {
             position: fixed;
             top: 0;
@@ -351,26 +351,6 @@
             text-shadow: 0 0 10px #00ff00;
         }
 
-        .login-tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #004400;
-        }
-
-        .login-tab {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            color: #008800;
-            border-bottom: 2px solid transparent;
-        }
-
-        .login-tab.active {
-            color: #00ff00;
-            border-bottom-color: #00ff00;
-        }
-
         .form-group {
             margin-bottom: 15px;
         }
@@ -392,11 +372,7 @@
             outline: none;
         }
 
-        .form-group input:focus, .form-group select:focus {
-            border-color: #00ff00;
-        }
-
-        .military-btn {
+        .start-mission-btn {
             width: 100%;
             padding: 12px;
             background: #ff4444;
@@ -406,19 +382,10 @@
             font-size: 16px;
             cursor: pointer;
             transition: background 0.3s;
-            margin-top: 10px;
         }
 
-        .military-btn:hover {
+        .start-mission-btn:hover {
             background: #cc3333;
-        }
-
-        .military-btn.secondary {
-            background: #004400;
-        }
-
-        .military-btn.secondary:hover {
-            background: #006600;
         }
 
         .error-message {
@@ -426,16 +393,10 @@
             margin-top: 10px;
             text-align: center;
         }
-
-        .success-message {
-            color: #00ff00;
-            margin-top: 10px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
-    <!-- Экран авторизации -->
+    <!-- Экран входа -->
     <div id="loginScreen" class="login-container">
         <div class="military-login">
             <div class="login-title">🎖️ LM MILITARY MESSENGER</div>
@@ -443,63 +404,37 @@
                 СИСТЕМА ВОЕННОЙ СВЯЗИ
             </div>
             
-            <div class="login-tabs">
-                <div class="login-tab active" data-tab="login">ВХОД</div>
-                <div class="login-tab" data-tab="register">РЕГИСТРАЦИЯ</div>
+            <div class="form-group">
+                <label>ВАШЕ ИМЯ:</label>
+                <input type="text" id="username" placeholder="Введите ваше имя">
             </div>
-
-            <!-- Форма входа -->
-            <div id="loginForm">
-                <div class="form-group">
-                    <label>ИМЯ ПОЛЬЗОВАТЕЛЯ:</label>
-                    <input type="text" id="loginUsername" placeholder="Введите имя пользователя">
-                </div>
-                <div class="form-group">
-                    <label>ПАРОЛЬ:</label>
-                    <input type="password" id="loginPassword" placeholder="Введите пароль">
-                </div>
-                <button id="loginBtn" class="military-btn">ВОЙТИ В СИСТЕМУ</button>
+            <div class="form-group">
+                <label>ИМЯ ПЕРСОНАЖА:</label>
+                <input type="text" id="characterName" placeholder="Введите имя персонажа">
             </div>
-
-            <!-- Форма регистрации -->
-            <div id="registerForm" style="display: none;">
-                <div class="form-group">
-                    <label>ИМЯ ПОЛЬЗОВАТЕЛЯ:</label>
-                    <input type="text" id="regUsername" placeholder="Придумайте имя пользователя">
-                </div>
-                <div class="form-group">
-                    <label>ПАРОЛЬ:</label>
-                    <input type="password" id="regPassword" placeholder="Придумайте пароль">
-                </div>
-                <div class="form-group">
-                    <label>ИМЯ ПЕРСОНАЖА:</label>
-                    <input type="text" id="regCharacter" placeholder="Введите имя персонажа">
-                </div>
-                <div class="form-group">
-                    <label>ЗВАНИЕ:</label>
-                    <select id="regRank">
-                        <option value="Рядовой">Рядовой</option>
-                        <option value="Ефрейтор">Ефрейтор</option>
-                        <option value="Сержант">Сержант</option>
-                        <option value="Лейтенант">Лейтенант</option>
-                        <option value="Капитан">Капитан</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>ПОДРАЗДЕЛЕНИЕ:</label>
-                    <select id="regUnit">
-                        <option value="command">Командование (CMD)</option>
-                        <option value="assault">Штурмовой отряд (ASLT)</option>
-                        <option value="recon">Разведка (RECON)</option>
-                        <option value="support">Поддержка (SUPP)</option>
-                        <option value="medical">Медики (MED)</option>
-                    </select>
-                </div>
-                <button id="registerBtn" class="military-btn secondary">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+            <div class="form-group">
+                <label>ЗВАНИЕ:</label>
+                <select id="characterRank">
+                    <option value="Рядовой">Рядовой</option>
+                    <option value="Ефрейтор">Ефрейтор</option>
+                    <option value="Сержант">Сержант</option>
+                    <option value="Лейтенант">Лейтенант</option>
+                    <option value="Капитан">Капитан</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label>ПОДРАЗДЕЛЕНИЕ:</label>
+                <select id="characterUnit">
+                    <option value="command">Командование (CMD)</option>
+                    <option value="assault">Штурмовой отряд (ASLT)</option>
+                    <option value="recon">Разведка (RECON)</option>
+                    <option value="support">Поддержка (SUPP)</option>
+                    <option value="medical">Медики (MED)</option>
+                </select>
+            </div>
+            <button id="startMission" class="start-mission-btn">НАЧАТЬ МИССИЮ</button>
             
             <div id="loginError" class="error-message"></div>
-            <div id="loginSuccess" class="success-message"></div>
         </div>
     </div>
 
@@ -579,95 +514,38 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Клиентский код будет здесь
         const socket = io();
         let currentUser = null;
         let currentChannel = 'command';
         let isEncrypted = false;
 
-        // Переключение между вкладками
-        document.querySelectorAll('.login-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                const tabName = this.getAttribute('data-tab');
-                document.getElementById('loginForm').style.display = tabName === 'login' ? 'block' : 'none';
-                document.getElementById('registerForm').style.display = tabName === 'register' ? 'block' : 'none';
-            });
-        });
+        // Вход в систему
+        document.getElementById('startMission').addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const characterName = document.getElementById('characterName').value;
+            const rank = document.getElementById('characterRank').value;
+            const unit = document.getElementById('characterUnit').value;
 
-        // Вход
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-
-            if (!username || !password) {
-                showError('Заполните все поля');
+            if (!username || !characterName) {
+                document.getElementById('loginError').textContent = 'Заполните все поля';
                 return;
             }
 
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+            currentUser = {
+                username: username,
+                character_name: characterName,
+                rank: rank,
+                unit: unit
+            };
 
-                const data = await response.json();
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('userRank').textContent = currentUser.rank;
+            document.getElementById('userCharacter').textContent = currentUser.character_name;
 
-                if (data.success) {
-                    currentUser = data.user;
-                    showSuccess('Вход выполнен успешно');
-                    setTimeout(() => {
-                        document.getElementById('loginScreen').style.display = 'none';
-                        document.getElementById('app').style.display = 'block';
-                        document.getElementById('userRank').textContent = currentUser.rank;
-                        document.getElementById('userCharacter').textContent = currentUser.character_name;
-                        
-                        // Подключаемся к чату
-                        socket.emit('military_join', currentUser);
-                        loadMessages();
-                    }, 1000);
-                } else {
-                    showError(data.error);
-                }
-            } catch (error) {
-                showError('Ошибка соединения');
-            }
-        });
-
-        // Регистрация
-        document.getElementById('registerBtn').addEventListener('click', async () => {
-            const username = document.getElementById('regUsername').value;
-            const password = document.getElementById('regPassword').value;
-            const character_name = document.getElementById('regCharacter').value;
-            const rank = document.getElementById('regRank').value;
-            const unit = document.getElementById('regUnit').value;
-
-            if (!username || !password || !character_name) {
-                showError('Заполните все обязательные поля');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password, character_name, rank, unit })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showSuccess('Регистрация успешна! Теперь войдите в систему.');
-                    document.querySelector('.login-tab[data-tab="login"]').click();
-                } else {
-                    showError(data.error);
-                }
-            } catch (error) {
-                showError('Ошибка соединения');
-            }
+            // Подключаемся к чату
+            socket.emit('military_join', currentUser);
+            loadMessages();
         });
 
         // Выход
@@ -677,17 +555,119 @@
             document.getElementById('loginScreen').style.display = 'flex';
         });
 
-        function showError(message) {
-            document.getElementById('loginError').textContent = message;
-            document.getElementById('loginSuccess').textContent = '';
+        // Смена канала
+        document.querySelectorAll('.unit-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.unit-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                currentChannel = this.getAttribute('data-channel');
+                document.getElementById('currentChannel').textContent = `#${this.querySelector('.unit-name').textContent.toUpperCase()}`;
+                loadMessages();
+            });
+        });
+
+        // Шифрование
+        document.getElementById('encryptToggle').addEventListener('click', function() {
+            isEncrypted = !isEncrypted;
+            this.classList.toggle('active', isEncrypted);
+            this.textContent = isEncrypted ? '🔓 РАСШИФРОВАТЬ' : '🔒 ШИФРОВАТЬ';
+            document.querySelector('.encryption-status').textContent = 
+                `ШИФРОВАНИЕ: ${isEncrypted ? 'ВКЛЮЧЕНО' : 'ОТКЛЮЧЕНО'}`;
+        });
+
+        // Отправка сообщения
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const content = e.target.value.trim();
+                if (content && currentUser) {
+                    socket.emit('send_military_message', {
+                        content: content,
+                        channel: currentChannel,
+                        encrypted: isEncrypted
+                    });
+                    e.target.value = '';
+                }
+            }
+        });
+
+        // Получение новых сообщений
+        socket.on('new_message', (message) => {
+            addMessageToUI(message);
+        });
+
+        // Обновление онлайн пользователей
+        socket.on('online_users_update', (users) => {
+            updateOnlineUsers(users);
+        });
+
+        // Загрузка сообщений
+        async function loadMessages() {
+            try {
+                const response = await fetch(`/api/messages/${currentChannel}`);
+                const messages = await response.json();
+                
+                const container = document.getElementById('messagesContainer');
+                container.innerHTML = '';
+                
+                messages.forEach(msg => addMessageToUI(msg));
+                scrollToBottom();
+            } catch (error) {
+                console.error('Ошибка загрузки сообщений:', error);
+            }
         }
 
-        function showSuccess(message) {
-            document.getElementById('loginSuccess').textContent = message;
-            document.getElementById('loginError').textContent = '';
+        // Добавление сообщения в UI
+        function addMessageToUI(message) {
+            const container = document.getElementById('messagesContainer');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${message.is_system ? 'system' : ''} ${message.is_encrypted ? 'encrypted' : ''}`;
+            
+            const time = new Date(message.created_at).toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <span class="message-rank">${message.rank}</span>
+                    <span class="message-author">${message.character_name}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${message.content}</div>
+            `;
+            
+            container.appendChild(messageEl);
+            scrollToBottom();
         }
 
-        // Остальной код для чата...
+        // Обновление списка онлайн пользователей
+        function updateOnlineUsers(users) {
+            const container = document.getElementById('userList');
+            const count = document.getElementById('onlineCount');
+            
+            count.textContent = users.length;
+            container.innerHTML = '';
+            
+            users.forEach(user => {
+                const userEl = document.createElement('div');
+                userEl.className = 'user-item';
+                userEl.innerHTML = `
+                    <div class="user-avatar">${user.character_name.charAt(0)}</div>
+                    <div class="user-details">
+                        <div class="user-rank">${user.rank}</div>
+                        <div class="user-name">${user.character_name}</div>
+                    </div>
+                `;
+                container.appendChild(userEl);
+            });
+        }
+
+        // Прокрутка вниз
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
     </script>
 </body>
 </html>
