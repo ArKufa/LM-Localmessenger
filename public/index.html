@@ -317,7 +317,7 @@
             font-size: 12px;
         }
 
-        /* Экран входа */
+        /* Экран авторизации */
         .login-container {
             position: fixed;
             top: 0;
@@ -351,31 +351,24 @@
             text-shadow: 0 0 10px #00ff00;
         }
 
-        .login-subtitle {
-            text-align: center;
-            color: #008800;
-            margin-bottom: 30px;
-        }
-
-        .discord-login-btn {
-            width: 100%;
-            padding: 15px;
-            background: #5865F2;
-            border: none;
-            border-radius: 3px;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
+        .login-tabs {
+            display: flex;
             margin-bottom: 20px;
-            transition: background 0.3s;
+            border-bottom: 1px solid #004400;
         }
 
-        .discord-login-btn:hover {
-            background: #4752c4;
+        .login-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            color: #008800;
+            border-bottom: 2px solid transparent;
         }
 
-        .character-setup {
-            margin-top: 20px;
+        .login-tab.active {
+            color: #00ff00;
+            border-bottom-color: #00ff00;
         }
 
         .form-group {
@@ -399,7 +392,11 @@
             outline: none;
         }
 
-        .start-mission-btn {
+        .form-group input:focus, .form-group select:focus {
+            border-color: #00ff00;
+        }
+
+        .military-btn {
             width: 100%;
             padding: 12px;
             background: #ff4444;
@@ -409,10 +406,19 @@
             font-size: 16px;
             cursor: pointer;
             transition: background 0.3s;
+            margin-top: 10px;
         }
 
-        .start-mission-btn:hover {
+        .military-btn:hover {
             background: #cc3333;
+        }
+
+        .military-btn.secondary {
+            background: #004400;
+        }
+
+        .military-btn.secondary:hover {
+            background: #006600;
         }
 
         .error-message {
@@ -420,47 +426,80 @@
             margin-top: 10px;
             text-align: center;
         }
+
+        .success-message {
+            color: #00ff00;
+            margin-top: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <!-- Экран входа -->
+    <!-- Экран авторизации -->
     <div id="loginScreen" class="login-container">
         <div class="military-login">
             <div class="login-title">🎖️ LM MILITARY MESSENGER</div>
-            <div class="login-subtitle">СИСТЕМА ВОЕННОЙ СВЯЗИ</div>
+            <div class="login-subtitle" style="text-align: center; color: #008800; margin-bottom: 20px;">
+                СИСТЕМА ВОЕННОЙ СВЯЗИ
+            </div>
             
-            <button id="discordLogin" class="discord-login-btn">ВОЙТИ ЧЕРЕЗ DISCORD</button>
-            
-            <div id="characterSetup" class="character-setup" style="display: none;">
+            <div class="login-tabs">
+                <div class="login-tab active" data-tab="login">ВХОД</div>
+                <div class="login-tab" data-tab="register">РЕГИСТРАЦИЯ</div>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="loginForm">
+                <div class="form-group">
+                    <label>ИМЯ ПОЛЬЗОВАТЕЛЯ:</label>
+                    <input type="text" id="loginUsername" placeholder="Введите имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label>ПАРОЛЬ:</label>
+                    <input type="password" id="loginPassword" placeholder="Введите пароль">
+                </div>
+                <button id="loginBtn" class="military-btn">ВОЙТИ В СИСТЕМУ</button>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label>ИМЯ ПОЛЬЗОВАТЕЛЯ:</label>
+                    <input type="text" id="regUsername" placeholder="Придумайте имя пользователя">
+                </div>
+                <div class="form-group">
+                    <label>ПАРОЛЬ:</label>
+                    <input type="password" id="regPassword" placeholder="Придумайте пароль">
+                </div>
                 <div class="form-group">
                     <label>ИМЯ ПЕРСОНАЖА:</label>
-                    <input type="text" id="characterName" placeholder="Введите имя персонажа">
+                    <input type="text" id="regCharacter" placeholder="Введите имя персонажа">
                 </div>
                 <div class="form-group">
                     <label>ЗВАНИЕ:</label>
-                    <select id="characterRank">
+                    <select id="regRank">
                         <option value="Рядовой">Рядовой</option>
                         <option value="Ефрейтор">Ефрейтор</option>
                         <option value="Сержант">Сержант</option>
                         <option value="Лейтенант">Лейтенант</option>
                         <option value="Капитан">Капитан</option>
-                        <option value="Майор">Майор</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>ПОДРАЗДЕЛЕНИЕ:</label>
-                    <select id="characterUnit">
-                        <option value="CMD">Командование (CMD)</option>
-                        <option value="ASLT">Штурмовой отряд (ASLT)</option>
-                        <option value="RECON">Разведка (RECON)</option>
-                        <option value="SUPP">Поддержка (SUPP)</option>
-                        <option value="MED">Медики (MED)</option>
+                    <select id="regUnit">
+                        <option value="command">Командование (CMD)</option>
+                        <option value="assault">Штурмовой отряд (ASLT)</option>
+                        <option value="recon">Разведка (RECON)</option>
+                        <option value="support">Поддержка (SUPP)</option>
+                        <option value="medical">Медики (MED)</option>
                     </select>
                 </div>
-                <button id="startMission" class="start-mission-btn">НАЧАТЬ МИССИЮ</button>
+                <button id="registerBtn" class="military-btn secondary">ЗАРЕГИСТРИРОВАТЬСЯ</button>
             </div>
             
             <div id="loginError" class="error-message"></div>
+            <div id="loginSuccess" class="success-message"></div>
         </div>
     </div>
 
@@ -478,6 +517,7 @@
             <div class="user-info">
                 <span class="user-rank" id="userRank">Рядовой</span>
                 <span id="userCharacter">Имя персонажа</span>
+                <button id="logoutBtn" style="background: #ff4444; border: none; color: white; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 10px;">ВЫЙТИ</button>
             </div>
         </div>
 
@@ -490,7 +530,7 @@
                     <div class="unit-code">CMD</div>
                     <div class="unit-name">Командование</div>
                 </div>
-                <div class="unit-item" data-channel="aslt">
+                <div class="unit-item" data-channel="assault">
                     <div class="unit-code">ASLT</div>
                     <div class="unit-name">Штурмовой отряд</div>
                 </div>
@@ -498,11 +538,11 @@
                     <div class="unit-code">RECON</div>
                     <div class="unit-name">Разведка</div>
                 </div>
-                <div class="unit-item" data-channel="supp">
+                <div class="unit-item" data-channel="support">
                     <div class="unit-code">SUPP</div>
                     <div class="unit-name">Поддержка</div>
                 </div>
-                <div class="unit-item" data-channel="med">
+                <div class="unit-item" data-channel="medical">
                     <div class="unit-code">MED</div>
                     <div class="unit-name">Медики</div>
                 </div>
@@ -541,7 +581,113 @@
     <script>
         // Клиентский код будет здесь
         const socket = io();
-        // ... JavaScript код для военного интерфейса
+        let currentUser = null;
+        let currentChannel = 'command';
+        let isEncrypted = false;
+
+        // Переключение между вкладками
+        document.querySelectorAll('.login-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const tabName = this.getAttribute('data-tab');
+                document.getElementById('loginForm').style.display = tabName === 'login' ? 'block' : 'none';
+                document.getElementById('registerForm').style.display = tabName === 'register' ? 'block' : 'none';
+            });
+        });
+
+        // Вход
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showError('Заполните все поля');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    showSuccess('Вход выполнен успешно');
+                    setTimeout(() => {
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('app').style.display = 'block';
+                        document.getElementById('userRank').textContent = currentUser.rank;
+                        document.getElementById('userCharacter').textContent = currentUser.character_name;
+                        
+                        // Подключаемся к чату
+                        socket.emit('military_join', currentUser);
+                        loadMessages();
+                    }, 1000);
+                } else {
+                    showError(data.error);
+                }
+            } catch (error) {
+                showError('Ошибка соединения');
+            }
+        });
+
+        // Регистрация
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const character_name = document.getElementById('regCharacter').value;
+            const rank = document.getElementById('regRank').value;
+            const unit = document.getElementById('regUnit').value;
+
+            if (!username || !password || !character_name) {
+                showError('Заполните все обязательные поля');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, character_name, rank, unit })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Регистрация успешна! Теперь войдите в систему.');
+                    document.querySelector('.login-tab[data-tab="login"]').click();
+                } else {
+                    showError(data.error);
+                }
+            } catch (error) {
+                showError('Ошибка соединения');
+            }
+        });
+
+        // Выход
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            currentUser = null;
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+        });
+
+        function showError(message) {
+            document.getElementById('loginError').textContent = message;
+            document.getElementById('loginSuccess').textContent = '';
+        }
+
+        function showSuccess(message) {
+            document.getElementById('loginSuccess').textContent = message;
+            document.getElementById('loginError').textContent = '';
+        }
+
+        // Остальной код для чата...
     </script>
 </body>
 </html>
