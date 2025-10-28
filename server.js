@@ -16,9 +16,15 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Попытка подключения к Supabase (с защитой от ошибок)
+// Проверяем существование папки public и файлов
+const publicDir = path.join(__dirname, 'public');
+console.log('📁 Public directory path:', publicDir);
+
+// Обслуживаем статические файлы
+app.use(express.static(publicDir));
+
+// Попытка подключения к Supabase
 let supabase = null;
 try {
   const { createClient } = require('@supabase/supabase-js');
@@ -35,7 +41,7 @@ try {
   console.log('⚠️ Supabase недоступен. Используется режим без базы данных.');
 }
 
-// Хранилище в памяти (fallback)
+// Хранилище в памяти
 const activeUsers = new Map();
 const userSockets = new Map();
 const messageHistory = {
@@ -59,12 +65,6 @@ const systemBots = {
     character: 'Мастер Игры',
     avatar: '🎮',
     description: 'Гейммастер сервера'
-  },
-  'event_bot': {
-    name: 'Event Bot',
-    character: 'Организатор Событий',
-    avatar: '🎉',
-    description: 'Бот мероприятий'
   }
 };
 
@@ -79,7 +79,6 @@ const channels = [
 
 // Вспомогательные функции для работы с данными
 const database = {
-  // Сохранение пользователя
   async saveUser(user) {
     if (supabase) {
       try {
@@ -101,7 +100,6 @@ const database = {
     return true;
   },
 
-  // Сохранение сообщения
   async saveMessage(message) {
     if (supabase) {
       try {
@@ -116,7 +114,6 @@ const database = {
         return { error };
       }
     } else {
-      // Сохраняем в памяти
       const channel = message.channel || 'general';
       if (!messageHistory[channel]) messageHistory[channel] = [];
       
@@ -127,7 +124,6 @@ const database = {
       
       messageHistory[channel].push(messageWithId);
       
-      // Ограничиваем историю
       if (messageHistory[channel].length > 100) {
         messageHistory[channel] = messageHistory[channel].slice(-50);
       }
@@ -136,7 +132,6 @@ const database = {
     }
   },
 
-  // Загрузка сообщений
   async loadMessages(channel) {
     if (supabase) {
       try {
@@ -156,7 +151,6 @@ const database = {
     }
   },
 
-  // Обновление статуса пользователя при выходе
   async updateUserOffline(username) {
     if (supabase) {
       try {
@@ -188,7 +182,7 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// Главная страница
+// Главная страница - отдаем index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -223,7 +217,6 @@ app.get('/api/online-users', (req, res) => {
 io.on('connection', (socket) => {
   console.log('🔗 Новое подключение:', socket.id);
 
-  // Присоединение пользователя к чату
   socket.on('user_join', async (userData) => {
     try {
       const user = {
@@ -235,20 +228,14 @@ io.on('connection', (socket) => {
         lastSeen: new Date()
       };
 
-      // Сохраняем пользователя в памяти
       activeUsers.set(socket.id, user);
       userSockets.set(userData.username, socket.id);
 
-      // Сохраняем в базе данных
       await database.saveUser(user);
 
-      // Уведомляем всех о новом пользователе
       socket.broadcast.emit('user_joined', user);
-      
-      // Отправляем текущий список онлайн пользователей
       updateOnlineUsers();
 
-      // Приветственное сообщение от бота
       const welcomeMessage = {
         sender: 'system',
         character: systemBots.rp_helper.character,
@@ -259,7 +246,6 @@ io.on('connection', (socket) => {
         is_bot: true
       };
 
-      // Сохраняем и отправляем приветственное сообщение
       const { data: savedMessage } = await database.saveMessage(welcomeMessage);
       if (savedMessage) {
         socket.emit('new_message', savedMessage);
@@ -273,7 +259,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Обработка новых сообщений
   socket.on('send_message', async (messageData) => {
     try {
       const user = activeUsers.get(socket.id);
@@ -292,15 +277,12 @@ io.on('connection', (socket) => {
         is_bot: false
       };
 
-      // Сохраняем сообщение
       const { data: savedMessage, error } = await database.saveMessage(message);
 
       if (error) throw error;
 
-      // Отправляем сообщение всем
       io.emit('new_message', savedMessage || message);
 
-      // Обработка команд для ботов
       if (messageData.content.startsWith('/')) {
         handleBotCommand(messageData.content, user, socket);
       }
@@ -311,35 +293,27 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Обработка отключения
   socket.on('disconnect', async () => {
     const user = activeUsers.get(socket.id);
     
     if (user) {
-      // Удаляем из активных пользователей
       activeUsers.delete(socket.id);
       userSockets.delete(user.username);
 
-      // Обновляем статус в базе данных
       await database.updateUserOffline(user.username);
 
-      // Уведомляем всех о выходе пользователя
       socket.broadcast.emit('user_left', user);
-
-      // Обновляем список онлайн пользователей
       updateOnlineUsers();
 
       console.log(`👋 Пользователь ${user.character} покинул чат`);
     }
   });
 
-  // Пинг для поддержания соединения
   socket.on('ping', () => {
     socket.emit('pong', { timestamp: new Date().toISOString() });
   });
 });
 
-// Обработка команд ботов
 function handleBotCommand(command, user, socket) {
   const [cmd, ...args] = command.slice(1).split(' ');
   const response = {};
@@ -415,11 +389,9 @@ function handleBotCommand(command, user, socket) {
       response.bot = 'rp_helper';
   }
 
-  // Отправляем ответ от бота
   sendBotMessage(response.bot, response.content, socket);
 }
 
-// Функция отправки сообщения от бота
 async function sendBotMessage(botId, content, socket) {
   const bot = systemBots[botId];
   if (!bot) return;
@@ -440,7 +412,6 @@ async function sendBotMessage(botId, content, socket) {
   }
 }
 
-// Функция обновления списка онлайн пользователей
 function updateOnlineUsers() {
   const onlineUsers = Array.from(activeUsers.values());
   io.emit('online_users_update', onlineUsers);
