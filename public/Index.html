@@ -186,6 +186,7 @@
 
         .message-content {
             line-height: 1.4;
+            white-space: pre-wrap;
         }
 
         .input-area {
@@ -297,6 +298,15 @@
             margin-right: 8px;
         }
 
+        .system-notification {
+            background-color: rgba(255, 193, 7, 0.2);
+            padding: 8px 12px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 10px 0;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 250px;
@@ -352,6 +362,7 @@
                         <li class="channel-item" data-channel="ooc">OOC чат</li>
                         <li class="channel-item" data-channel="faction">Фракции</li>
                         <li class="channel-item" data-channel="trade">Торговля</li>
+                        <li class="channel-item" data-channel="events">События</li>
                     </ul>
                 </div>
 
@@ -416,6 +427,11 @@
                 return;
             }
 
+            if (username.length < 2 || character.length < 2) {
+                loginError.textContent = 'Имя и персонаж должны быть не менее 2 символов';
+                return;
+            }
+
             // Сохраняем информацию о пользователе
             currentUser = {
                 username,
@@ -458,6 +474,12 @@
         // Пользователь вышел
         socket.on('user_left', (user) => {
             addSystemMessage(`${user.character} покинул чат`);
+        });
+
+        // Ошибка соединения
+        socket.on('connect_error', (error) => {
+            console.error('Ошибка подключения:', error);
+            loginError.textContent = 'Ошибка подключения к серверу';
         });
 
         // Обработка отправки сообщений
@@ -518,7 +540,8 @@
                 'general': 'Общий чат',
                 'ooc': 'OOC чат',
                 'faction': 'Фракции',
-                'trade': 'Торговля'
+                'trade': 'Торговля',
+                'events': 'События'
             };
             
             return channelNames[channel] || channel;
@@ -577,10 +600,8 @@
         // Функция добавления системного сообщения
         function addSystemMessage(content) {
             const messageElement = document.createElement('div');
-            messageElement.classList.add('message', 'bot');
-            messageElement.innerHTML = `
-                <div class="message-content">${content}</div>
-            `;
+            messageElement.classList.add('system-notification');
+            messageElement.textContent = content;
             messagesContainer.appendChild(messageElement);
             scrollToBottom();
         }
@@ -614,6 +635,7 @@
 
         // Загрузка онлайн пользователей при подключении
         socket.on('connect', () => {
+            console.log('✅ Подключено к серверу');
             fetch('/api/online-users')
                 .then(response => response.json())
                 .then(users => {
@@ -621,6 +643,9 @@
                     updateOnlineUsersUI();
                 });
         });
+
+        // Автофокус на поле ввода после загрузки
+        messageInput.focus();
     </script>
 </body>
 </html>
