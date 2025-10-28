@@ -1,7 +1,7 @@
 {
   "name": "lm-local-messenger",
   "version": "1.0.0",
-  "description": "LM-Local Messenger for RP Server",
+  "description": "LM-Local Messenger with Discord integration",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,7 +11,7 @@
     "express": "^4.18.2",
     "socket.io": "^4.7.2",
     "cors": "^2.8.5",
-    "@supabase/supabase-js": "^2.38.0"
+    "axios": "^1.5.0"
   },
   "engines": {
     "node": ">=18.0.0"
