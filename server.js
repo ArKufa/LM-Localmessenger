@@ -16,7 +16,7 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Попытка подключения к Supabase (с защитой от ошибок)
 let supabase = null;
